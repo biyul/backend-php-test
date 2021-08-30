@@ -1,5 +1,7 @@
 <?php
 
+use AskNicely\Model\Todo;
+use AskNicely\Util\FlashMessage;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -47,9 +49,7 @@ $app->get('/todo/{id}', function (Request $request, $id) use ($app) {
     }
 
     if ($id){
-        $sql = "SELECT * FROM todos WHERE id = '$id'";
-        $todo = $app['db']->fetchAssoc($sql);
-
+        $todo = Todo::find($id);
         return $app['twig']->render('todo.html', [
             'todo' => $todo,
         ]);
@@ -62,20 +62,16 @@ $app->get('/todo/{id}', function (Request $request, $id) use ($app) {
             $page = 1;
         }
         if (!(is_numeric($page) && $page > 0)) {
-            $app['session']->getFlashBag()->add('danger', "Invalid page number!");
+            FlashMessage::success($app, "Invalid page number!");
             return $app->redirect('/todo');
         }
 
         // Select a page of results
-        $limit1 = ($page-1) * $itemsPerPage;
-        $limit2 = $itemsPerPage;
-        $todosSql = "SELECT * FROM todos WHERE user_id = '${user['id']}' LIMIT $limit1,$limit2";
-        $todosResult = $app['db']->fetchAll($todosSql);
+        $todosResult = Todo::where('user_id', '=', 1)->forPage($page, $itemsPerPage)->get();
+        $countResult = Todo::where('user_id', '=', 1)->count();
 
         // Count all non-paged results.
-        $countSql = "SELECT COUNT(1) as total_items FROM todos WHERE user_id = '${user['id']}'";
-        $countResult = $app['db']->fetchAll($countSql);
-        $totalPages = ceil($countResult[0]['total_items'] / $itemsPerPage);
+        $totalPages = ceil($countResult / $itemsPerPage);
 
         return $app['twig']->render('todos.html', [
             'todos' => $todosResult,
@@ -109,15 +105,18 @@ $app->post('/todo/add', function (Request $request) use ($app) {
         return $app->redirect('/login');
     }
 
+    // Validate against empty description.
     $user_id = $user['id'];
     $description = $request->get('description');
     if ($description === null || $description === '') {
         $app->abort(500, 'Description cannot be empty.');
     }
 
-    $sql = "INSERT INTO todos (user_id, description) VALUES ('$user_id', '$description')";
-    $app['db']->executeUpdate($sql);
-
+    $todo = new Todo([
+        'description' => $description,
+        'user_id' => $user_id
+    ]);
+    $todo->save();
     FlashMessage::success($app, "Successfully added a Todo!");
 
     return $app->redirect('/todo');
@@ -127,35 +126,51 @@ $app->post('/todo/add', function (Request $request) use ($app) {
  * Change the status of a todo.
  */
 $app->post('/todo/toggle/{id}', function (Request $request, $id) use ($app) {
-    // Check user login.
-    if (null === $user = $app['session']->get('user')) {
-        return $app->redirect('/login');
+    try {
+        // Check user login.
+        if (null === $user = $app['session']->get('user')) {
+            return $app->redirect('/login');
+        }
+
+        $done = $request->get('todo-done');
+        if ($done === null) {
+            $sqlDone = 0;
+        } else if ($done === 'on') {
+            $sqlDone = 1;
+        } else {
+            $app->abort(400, 'There was a problem while changing the status of the todo.');
+        }
+
+        $todo = Todo::find($id);
+        if ($todo) {
+            $todo->done = $sqlDone;
+            $todo->save();
+        } else {
+            throw new Exception("Todo ID#$id doesn't exist");
+        }
+
+        FlashMessage::success($app, "Successfully marked todo #$id as ".($sqlDone === 1 ? "done" : "not done")."!");
+    } catch (Exception $e) {
+        FlashMessage::danger($app, "Failed to update done status of todo #$id.");
+    } finally {
+        return $app->redirect('/todo');
     }
-
-    $done = $request->get('todo-done');
-    if ($done === null) {
-        $sqlDone = 0;
-    } else if ($done === 'on') {
-        $sqlDone = 1;
-    } else {
-        $app->abort(400, 'There was a problem while changing the status of the todo.');
-    }
-
-    $sql = "UPDATE todos SET done = '$sqlDone' WHERE id = $id LIMIT 1;";
-    $app['db']->executeUpdate($sql);
-
-    $app['session']->getFlashBag()->add('success', "Successfully marked todo #$id as ".($sqlDone === 1 ? "done" : "not done")."!");
-
-    return $app->redirect('/todo');
 });
 
 
 $app->match('/todo/delete/{id}', function ($id) use ($app) {
+    try {
+        $todo = Todo::find($id); // throws an unrecovable FatalErrorException in PHP5.
+        if ($todo) {
+            $todo->delete();
+        } else {
+            throw new Exception("Todo ID#$id doesn't exist");
+        }
 
-    $sql = "DELETE FROM todos WHERE id = '$id'";
-    $app['db']->executeUpdate($sql);
-
-    $app['session']->getFlashBag()->add('success', "Successfully deleted todo #$id!");
-
-    return $app->redirect('/todo');
+        FlashMessage::success($app, "Successfully deleted todo #$id.");
+    } catch (Exception $e) {
+        FlashMessage::danger($app, "Failed to delete todo #$id.");
+    } finally {
+        return $app->redirect('/todo');
+    }
 });
