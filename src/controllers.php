@@ -96,6 +96,8 @@ $app->post('/todo/add', function (Request $request) use ($app) {
     $sql = "INSERT INTO todos (user_id, description) VALUES ('$user_id', '$description')";
     $app['db']->executeUpdate($sql);
 
+    $app['session']->getFlashBag()->add('success', "Successfully added a Todo!");
+
     return $app->redirect('/todo');
 });
 
@@ -120,6 +122,8 @@ $app->post('/todo/toggle/{id}', function (Request $request, $id) use ($app) {
     $sql = "UPDATE todos SET done = '$sqlDone' WHERE id = $id LIMIT 1;";
     $app['db']->executeUpdate($sql);
 
+    $app['session']->getFlashBag()->add('success', "Successfully marked todo #$id as ".($sqlDone === 1 ? "done" : "not done")."!");
+
     return $app->redirect('/todo');
 });
 
@@ -128,6 +132,8 @@ $app->match('/todo/delete/{id}', function ($id) use ($app) {
 
     $sql = "DELETE FROM todos WHERE id = '$id'";
     $app['db']->executeUpdate($sql);
+
+    $app['session']->getFlashBag()->add('success', "Successfully deleted todo #$id!");
 
     return $app->redirect('/todo');
 });
