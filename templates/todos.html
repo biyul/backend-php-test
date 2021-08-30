@@ -50,6 +50,18 @@
             </form>
         </tr>
     </table>
+    <!-- Pagination buttons -->
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+
+            {% for i in 0..total_pages-1 %}
+                <li class="page-item" data-page="{{ i+1 }}"><a class="page-link" href="/todo?page={{ i+1 }}">{{ i+1 }}</a></li>
+            {% endfor %}
+
+            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+        </ul>
+    </nav><!-- /Pagination buttons -->
 </div>
 <script type="text/javascript">
     $(document).ready(function() {

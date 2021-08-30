@@ -41,7 +41,7 @@ $app->get('/logout', function () use ($app) {
 });
 
 
-$app->get('/todo/{id}', function ($id) use ($app) {
+$app->get('/todo/{id}', function (Request $request, $id) use ($app) {
     if (null === $user = $app['session']->get('user')) {
         return $app->redirect('/login');
     }
@@ -54,11 +54,32 @@ $app->get('/todo/{id}', function ($id) use ($app) {
             'todo' => $todo,
         ]);
     } else {
-        $sql = "SELECT * FROM todos WHERE user_id = '${user['id']}'";
-        $todos = $app['db']->fetchAll($sql);
+        $itemsPerPage = 5;
+
+        // Validate page.  If no page param is provided, then it is defaulted to 1.
+        $page = $request->query->get('page');
+        if (is_null($page)) {
+            $page = 1;
+        }
+        if (!(is_numeric($page) && $page > 0)) {
+            $app['session']->getFlashBag()->add('danger', "Invalid page number!");
+            return $app->redirect('/todo');
+        }
+
+        // Select a page of results
+        $limit1 = ($page-1) * $itemsPerPage;
+        $limit2 = $itemsPerPage;
+        $todosSql = "SELECT * FROM todos WHERE user_id = '${user['id']}' LIMIT $limit1,$limit2";
+        $todosResult = $app['db']->fetchAll($todosSql);
+
+        // Count all non-paged results.
+        $countSql = "SELECT COUNT(1) as total_items FROM todos WHERE user_id = '${user['id']}'";
+        $countResult = $app['db']->fetchAll($countSql);
+        $totalPages = ceil($countResult[0]['total_items'] / $itemsPerPage);
 
         return $app['twig']->render('todos.html', [
-            'todos' => $todos,
+            'todos' => $todosResult,
+            'total_pages' => $totalPages
         ]);
     }
 })
@@ -96,7 +117,7 @@ $app->post('/todo/add', function (Request $request) use ($app) {
     $sql = "INSERT INTO todos (user_id, description) VALUES ('$user_id', '$description')";
     $app['db']->executeUpdate($sql);
 
-    $app['session']->getFlashBag()->add('success', "Successfully added a Todo!");
+    FlashMessage::success($app, "Successfully added a Todo!");
 
     return $app->redirect('/todo');
 });
