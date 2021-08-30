@@ -86,6 +86,11 @@ $app->post('/todo/add', function (Request $request) use ($app) {
  * Change the status of a todo.
  */
 $app->post('/todo/toggle/{id}', function (Request $request, $id) use ($app) {
+    // Check user login.
+    if (null === $user = $app['session']->get('user')) {
+        return $app->redirect('/login');
+    }
+
     $done = $request->get('todo-done');
     if ($done === null) {
         $sqlDone = 0;
