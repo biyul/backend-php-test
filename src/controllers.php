@@ -1,5 +1,6 @@
 <?php
 
+use AskNicely\Model\Todo;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -47,9 +48,7 @@ $app->get('/todo/{id}', function (Request $request, $id) use ($app) {
     }
 
     if ($id){
-        $sql = "SELECT * FROM todos WHERE id = '$id'";
-        $todo = $app['db']->fetchAssoc($sql);
-
+        $todo = Todo::find($id);
         return $app['twig']->render('todo.html', [
             'todo' => $todo,
         ]);
@@ -67,15 +66,11 @@ $app->get('/todo/{id}', function (Request $request, $id) use ($app) {
         }
 
         // Select a page of results
-        $limit1 = ($page-1) * $itemsPerPage;
-        $limit2 = $itemsPerPage;
-        $todosSql = "SELECT * FROM todos WHERE user_id = '${user['id']}' LIMIT $limit1,$limit2";
-        $todosResult = $app['db']->fetchAll($todosSql);
+        $todosResult = Todo::where('user_id', '=', 1)->forPage($page, $itemsPerPage)->get();
+        $countResult = Todo::where('user_id', '=', 1)->count();
 
         // Count all non-paged results.
-        $countSql = "SELECT COUNT(1) as total_items FROM todos WHERE user_id = '${user['id']}'";
-        $countResult = $app['db']->fetchAll($countSql);
-        $totalPages = ceil($countResult[0]['total_items'] / $itemsPerPage);
+        $totalPages = ceil($countResult / $itemsPerPage);
 
         return $app['twig']->render('todos.html', [
             'todos' => $todosResult,
@@ -109,16 +104,20 @@ $app->post('/todo/add', function (Request $request) use ($app) {
         return $app->redirect('/login');
     }
 
+    // Validate against empty description.
     $user_id = $user['id'];
     $description = $request->get('description');
     if ($description === null || $description === '') {
         $app->abort(500, 'Description cannot be empty.');
     }
 
-    $sql = "INSERT INTO todos (user_id, description) VALUES ('$user_id', '$description')";
-    $app['db']->executeUpdate($sql);
+    $todo = new Todo([
+        'description' => $description,
+        'user_id' => $user_id
+    ]);
+    $todo->save();
 
-    FlashMessage::success($app, "Successfully added a Todo!");
+    $app['session']->getFlashBag()->add('success', "Successfully added a Todo!");
 
     return $app->redirect('/todo');
 });
