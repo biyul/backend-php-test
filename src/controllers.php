@@ -82,6 +82,25 @@ $app->post('/todo/add', function (Request $request) use ($app) {
     return $app->redirect('/todo');
 });
 
+/**
+ * Change the status of a todo.
+ */
+$app->post('/todo/toggle/{id}', function (Request $request, $id) use ($app) {
+    $done = $request->get('todo-done');
+    if ($done === null) {
+        $sqlDone = 0;
+    } else if ($done === 'on') {
+        $sqlDone = 1;
+    } else {
+        $app->abort(400, 'There was a problem while changing the status of the todo.');
+    }
+
+    $sql = "UPDATE todos SET done = '$sqlDone' WHERE id = $id LIMIT 1;";
+    $app['db']->executeUpdate($sql);
+
+    return $app->redirect('/todo');
+});
+
 
 $app->match('/todo/delete/{id}', function ($id) use ($app) {
 
