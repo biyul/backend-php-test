@@ -79,6 +79,7 @@ $app->get('/todo/{id}', function (Request $request, $id) use ($app) {
 
         return $app['twig']->render('todos.html', [
             'todos' => $todosResult,
+            'current_page' => $page,
             'total_pages' => $totalPages
         ]);
     }
