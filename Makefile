@@ -18,10 +18,9 @@ ssh-sudo:
 
 ssh-mysql:
 	docker exec -it mysql bash -l
+	# Run these manually.
+	# docker exec -w /home mysql mysql -u root -p ac_todos < database.sql
+	# docker exec -w /home mysql mysql -u root -p ac_todos < fixtures.sql
 
 asknicely:
-	# Security risk, but for demo purposes, eh.
 	docker exec -w /var/www php composer install
-	docker exec -w /home mysql mysql -u root -pletmein ac_todos < resources/database.sql
-	docker exec -w /home mysql mysql -u root -pletmein ac_todos < resources/fixtures.sql
-    # ;date.timezone =
