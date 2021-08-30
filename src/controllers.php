@@ -64,6 +64,23 @@ $app->get('/todo/{id}', function ($id) use ($app) {
 })
 ->value('id', null);
 
+/**
+ * Returns a todo, in JSON format.
+ */
+$app->get('/todo/{id}/json', function ($id) use ($app) {
+    // Check user login.
+    if (null === $user = $app['session']->get('user')) {
+        return $app->redirect('/login');
+    }
+
+    $sql = "SELECT * FROM todos WHERE id = '$id'";
+    $todo = $app['db']->fetchAssoc($sql);
+    $response = new Response(json_encode($todo));
+    $response->headers->set('Content-Type', 'application/json');
+
+    return $response;
+});
+
 
 $app->post('/todo/add', function (Request $request) use ($app) {
     if (null === $user = $app['session']->get('user')) {
