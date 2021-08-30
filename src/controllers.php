@@ -62,7 +62,7 @@ $app->get('/todo/{id}', function (Request $request, $id) use ($app) {
             $page = 1;
         }
         if (!(is_numeric($page) && $page > 0)) {
-            $app['session']->getFlashBag()->add('danger', "Invalid page number!");
+            FlashMessage::success($app, "Invalid page number!");
             return $app->redirect('/todo');
         }
 
@@ -117,8 +117,7 @@ $app->post('/todo/add', function (Request $request) use ($app) {
         'user_id' => $user_id
     ]);
     $todo->save();
-
-    $app['session']->getFlashBag()->add('success', "Successfully added a Todo!");
+    FlashMessage::success($app, "Successfully added a Todo!");
 
     return $app->redirect('/todo');
 });
@@ -150,7 +149,7 @@ $app->post('/todo/toggle/{id}', function (Request $request, $id) use ($app) {
             throw new Exception("Todo ID#$id doesn't exist");
         }
 
-        $app['session']->getFlashBag()->add('success', "Successfully marked todo #$id as ".($sqlDone === 1 ? "done" : "not done")."!");
+        FlashMessage::success($app, "Successfully marked todo #$id as ".($sqlDone === 1 ? "done" : "not done")."!");
     } catch (Exception $e) {
         FlashMessage::danger($app, "Failed to update done status of todo #$id.");
     } finally {
