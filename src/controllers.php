@@ -1,6 +1,7 @@
 <?php
 
 use AskNicely\Model\Todo;
+use AskNicely\Util\FlashMessage;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -126,35 +127,51 @@ $app->post('/todo/add', function (Request $request) use ($app) {
  * Change the status of a todo.
  */
 $app->post('/todo/toggle/{id}', function (Request $request, $id) use ($app) {
-    // Check user login.
-    if (null === $user = $app['session']->get('user')) {
-        return $app->redirect('/login');
+    try {
+        // Check user login.
+        if (null === $user = $app['session']->get('user')) {
+            return $app->redirect('/login');
+        }
+
+        $done = $request->get('todo-done');
+        if ($done === null) {
+            $sqlDone = 0;
+        } else if ($done === 'on') {
+            $sqlDone = 1;
+        } else {
+            $app->abort(400, 'There was a problem while changing the status of the todo.');
+        }
+
+        $todo = Todo::find($id);
+        if ($todo) {
+            $todo->done = $sqlDone;
+            $todo->save();
+        } else {
+            throw new Exception("Todo ID#$id doesn't exist");
+        }
+
+        $app['session']->getFlashBag()->add('success', "Successfully marked todo #$id as ".($sqlDone === 1 ? "done" : "not done")."!");
+    } catch (Exception $e) {
+        FlashMessage::danger($app, "Failed to update done status of todo #$id.");
+    } finally {
+        return $app->redirect('/todo');
     }
-
-    $done = $request->get('todo-done');
-    if ($done === null) {
-        $sqlDone = 0;
-    } else if ($done === 'on') {
-        $sqlDone = 1;
-    } else {
-        $app->abort(400, 'There was a problem while changing the status of the todo.');
-    }
-
-    $sql = "UPDATE todos SET done = '$sqlDone' WHERE id = $id LIMIT 1;";
-    $app['db']->executeUpdate($sql);
-
-    $app['session']->getFlashBag()->add('success', "Successfully marked todo #$id as ".($sqlDone === 1 ? "done" : "not done")."!");
-
-    return $app->redirect('/todo');
 });
 
 
 $app->match('/todo/delete/{id}', function ($id) use ($app) {
+    try {
+        $todo = Todo::find($id); // throws an unrecovable FatalErrorException in PHP5.
+        if ($todo) {
+            $todo->delete();
+        } else {
+            throw new Exception("Todo ID#$id doesn't exist");
+        }
 
-    $sql = "DELETE FROM todos WHERE id = '$id'";
-    $app['db']->executeUpdate($sql);
-
-    $app['session']->getFlashBag()->add('success', "Successfully deleted todo #$id!");
-
-    return $app->redirect('/todo');
+        FlashMessage::success($app, "Successfully deleted todo #$id.");
+    } catch (Exception $e) {
+        FlashMessage::danger($app, "Failed to delete todo #$id.");
+    } finally {
+        return $app->redirect('/todo');
+    }
 });
