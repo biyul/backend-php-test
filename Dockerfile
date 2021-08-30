@@ -4,6 +4,8 @@ FROM php:5.6-fpm
 # Set working directory
 WORKDIR /var/www
 
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
