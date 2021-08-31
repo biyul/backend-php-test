@@ -22,5 +22,10 @@ ssh-mysql:
 	# docker exec -w /home mysql mysql -u root -p ac_todos < database.sql
 	# docker exec -w /home mysql mysql -u root -p ac_todos < fixtures.sql
 
+ssh-composer-install:
+	docker exec -w /var/www php-bill12345 composer install
+
 asknicely:
+	docker-compose build
+	docker-compose up -d
 	docker exec -w /var/www php-bill12345 composer install

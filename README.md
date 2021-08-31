@@ -24,22 +24,14 @@ But if you want to use Docker:
 2. Run the following:
 ```bash
 cd /path/to/code/root
-cp config/config.yml.dist config/config.yml
+git checkout bill
+git pull
 make build
 make up
 make asknicely
 ```
 
-3. Change config/config.yml
-```yaml
-database:
-    host    : mysql-bill12345
-    dbname  : ac_todos
-    user    : appdb
-    password: letmein
-```
-
-4. Manually load migrations to within the container (couldn't automate this bit).
+3. Manually load migrations to within the container (couldn't automate this bit).
    You will be prompted for the password each time, which is "letmein".
 ```bash
 make ssh-mysql
@@ -49,6 +41,6 @@ mysql -u root -p ac_todos < /home/task2.sql
 exit
 ```
 
-5. Load the website:  http://docker.local:8080
+4. Load the website:  http://docker.local:8080
 
 Let me know if you encounter any issue.
