@@ -26,8 +26,6 @@ But if you want to use Docker:
 cd /path/to/code/root
 git checkout bill
 git pull
-make build
-make up
 make asknicely
 ```
 
