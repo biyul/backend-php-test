@@ -33,7 +33,7 @@ make asknicely
 3. Change config/config.yml
 ```yaml
 database:
-    host    : mysql
+    host    : mysql-bill12345
     dbname  : ac_todos
     user    : appdb
     password: letmein
