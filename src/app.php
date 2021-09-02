@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\Capsule\Manager as Capsule;
 use Silex\Application;
 use Silex\Provider\SessionServiceProvider;
 use Silex\Provider\TwigServiceProvider;
@@ -29,5 +30,20 @@ $app->register(new DoctrineServiceProvider, array(
         'charset'   => 'utf8',
     ),
 ));
+
+$capsule = new Capsule;
+$capsule->addConnection([
+    'driver' => 'mysql',
+    'host' => $app['config']['database']['host'],
+    'database' => $app['config']['database']['dbname'],
+    'username' => $app['config']['database']['user'],
+    'password' => $app['config']['database']['password'],
+    'charset' => 'utf8',
+    'collation' => 'utf8_unicode_ci',
+    'prefix' => '',
+]);
+
+$capsule->bootEloquent();
+
 
 return $app;

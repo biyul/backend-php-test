@@ -1,10 +1,23 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="col-md-4 col-md-offset-4">
+<div id="todos-table" class="col-md-4 col-md-offset-4">
+    {% for type, messages in app.session.flashbag.all() %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type }}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
     <h1>Todo List:</h1>
     <table class="table table-striped">
-        <th>#</th><th>User</th><th>Description</th><th></th>
+        <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Description</th>
+            <th>Done</th>
+            <th></th>
+        </tr>
         {% for todo in todos %}
             <tr>
                 <td>{{ todo.id }}</td>
@@ -13,6 +26,11 @@
                     <a href="{{ app.request.baseurl }}/todo/{{ todo.id }}">
                        {{ todo.description }}
                     </a>
+                </td>
+                <td>
+                    <form method="post" action="{{ app.request.baseurl }}/todo/toggle/{{ todo.id }}">
+                        <input type="checkbox" name="todo-done" {{ (todo.done) ? 'checked' : '' }}/>
+                    </form>
                 </td>
                 <td>
                     <form method="post" action="{{ app.request.baseurl }}/todo/delete/{{ todo.id }}">
@@ -24,7 +42,7 @@
         <tr>
             <form method="post" action="{{ app.request.baseurl }}/todo/add">
                 <td colspan="3">
-                    <input type="textbox" name="description" class="small-6 small-center" placeholder="Description...">
+                    <input type="textbox" name="description" class="small-6 small-center" placeholder="Description..." required>
                 </td>
                 <td>
                     <button type="submit" class="btn btn-sm btn-primary">Add</button>
@@ -32,5 +50,34 @@
             </form>
         </tr>
     </table>
+    <!-- Pagination buttons -->
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            {% if current_page <= 1  %}
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+            {% else %}
+                <li class="page-item"><a class="page-link" href="/todo?page={{ current_page-1 }}">Previous</a></li>
+            {% endif  %}
+
+            {% for i in 0..total_pages-1 %}
+                <li class="page-item {{ (i == current_page-1) ? 'active' : '' }}" data-page="{{ i+1 }}">
+                    <a class="page-link" href="/todo?page={{ i+1 }}">{{ i+1 }}</a>
+                </li>
+            {% endfor %}
+
+            {% if current_page >= total_pages  %}
+                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+            {% else %}
+                <li class="page-item"><a class="page-link" href="/todo?page={{ current_page+1 }}">Next</a></li>
+            {% endif  %}
+        </ul>
+    </nav><!-- /Pagination buttons -->
 </div>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('[name="todo-done"]').change(function() {
+            $(this).parent().submit();
+        });
+    })
+</script>
 {% endblock %}

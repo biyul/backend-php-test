@@ -1,0 +1,53 @@
+version: '3'
+
+networks:
+  app:
+
+services:
+  nginx-bill12345:
+    image: nginx:stable
+    container_name: nginx-bill12345
+    tty: true
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php-bill12345
+      - mysql-bill12345
+    networks:
+      - app
+
+  mysql-bill12345:
+    image: mysql:5.7.22
+    container_name: mysql-bill12345
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./resources:/home
+    environment:
+      MYSQL_DATABASE: ac_todos
+      MYSQL_USER: appdb
+      MYSQL_PASSWORD: letmein
+      MYSQL_ROOT_PASSWORD: letmein
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - app
+
+  php-bill12345:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: php-bill12345
+    volumes:
+      - ./:/var/www
+      - ./docker/php/php.ini-development:/usr/local/etc/php/php.ini-development
+    tty: true
+    ports:
+      - "9000:9000"
+    networks:
+      - app

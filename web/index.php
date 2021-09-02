@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set("Pacific/Auckland");
+
 use Symfony\Component\Debug\Debug;
 
 require_once __DIR__.'/../vendor/autoload.php';
